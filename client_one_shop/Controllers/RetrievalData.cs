@@ -1,12 +1,18 @@
-﻿using client_one_shop.Models;
+﻿using client_one_shop.Connections;
+using client_one_shop.Models;
 using Microsoft.Data.SqlClient;
 
 namespace client_one_shop.Controllers
 {
     internal class RetrievalData
     {
-        public static string _connectionString =
-            "Server=DESKTOP-J1L2733;Database=OneStores;Trusted_Connection=True;TrustServerCertificate=True;";
+        //public static string _connectionString =
+        //    "Server=Admin\\SQLEXPRESS;Database=TB_Poduct;Trusted_Connection=True;TrustServerCertificate=True;";
+
+        //public static string _connectionString =
+        //    "Server=Admin\\SQLEXPRESS;Database=TB_Poduct;User Id=sa;Password=123;Trusted_Connection=True;";
+    //    public static string _connectionString =
+    //"Server=Admin\\SQLEXPRESS;Database=TB_Poduct;User Id=sa;Password=123;Encrypt=False;";
 
         public static List<Product> GetProducts()
         {
@@ -14,7 +20,7 @@ namespace client_one_shop.Controllers
 
             try
             {
-                using (SqlConnection conn = new SqlConnection(_connectionString))
+                using (SqlConnection conn = new SqlConnection(ConnectionString.connectionString))
                 using (SqlCommand cmd = new SqlCommand("SELECT * FROM Product", conn))
                 {
                     conn.Open();
