@@ -273,8 +273,7 @@ namespace client_one_shop.Nika
                     contentType,
                     fs
                 );
-
-                // show selected image path in the bottom-most label (label6 per Designer)
+                 
                 label6.Text = dlg.FileName;
                 MessageBox.Show("Image uploaded.", "Success",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -306,14 +305,11 @@ namespace client_one_shop.Nika
         }
 
         private void BtnAdd(object sender, EventArgs e)
-        {
-            // Batch staging grid: you still haven’t designed the columns.
-            // When you do, wire the values into a TVP and call a bulk upsert proc.
+        { 
         }
 
         private void BtnMultiInsert(object sender, EventArgs e)
-        {
-            // Same story: needs a TVP + dbo.usp_Books_BulkUpsert to be meaningful.
+        { 
         }
 
         private void BtnClearTextBox(object sender, EventArgs e) => ClearForm();
@@ -321,16 +317,16 @@ namespace client_one_shop.Nika
         private void ClearForm()
         {
             textBoxBookId.Clear();
-            textBoxISBN13.Clear();    // Name
-            textBoxTitle.Clear();     // Title
-            textBoxAuthorId.Clear();  // Author
-            textBoxListPrice.Clear(); // Price
-            textBoxCostPrice.Clear(); // ISBN
-            textBoxStock.Clear();     // PublishedDate
-            textBox1.Clear();         // CreatedAtUtc
-
-            label2.Text = "...";      // pdf path display
-            label6.Text = "...";      // image path display
+            textBoxISBN13.Clear();     
+            textBoxTitle.Clear();      
+            textBoxAuthorId.Clear();   
+            textBoxListPrice.Clear();  
+            textBoxCostPrice.Clear();  
+            textBoxStock.Clear();      
+            textBox1.Clear();          
+                                       
+            label2.Text = "...";       
+            label6.Text = "...";       
 
             dataGridViewBooks.ClearSelection();
             AutoFillDates();
@@ -351,6 +347,13 @@ namespace client_one_shop.Nika
             if (DateTime.TryParse(input, CultureInfo.CurrentCulture, DateTimeStyles.None, out var d)) return d.Date;
             if (DateTime.TryParse(input, CultureInfo.InvariantCulture, DateTimeStyles.None, out d)) return d.Date;
             return null;
+        }
+
+        private void buttonPOS_Click(object sender, EventArgs e)
+        {
+            MainForm mainForm = new MainForm();
+            mainForm.Show();
+            this.Hide();
         }
     }
 }

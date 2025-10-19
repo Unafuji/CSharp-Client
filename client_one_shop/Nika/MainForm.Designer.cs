@@ -76,7 +76,7 @@
             labelItemCount.Size = new Size(69, 21);
             labelItemCount.TabIndex = 3;
             labelItemCount.Text = "Items: 0";
-            labelItemCount.Click += labelItemCount_Click;
+            //labelItemCount.Click += labelItemCount_Click;
             // 
             // label1
             // 
@@ -112,7 +112,7 @@
             Margin = new Padding(4, 3, 4, 3);
             Name = "MainForm";
             Text = "Bookstore App";
-            Load += MainForm_Load;
+            //Load += MainForm_Load;
             ((System.ComponentModel.ISupportInitialize)dataGridViewCart).EndInit();
             ResumeLayout(false);
             PerformLayout();

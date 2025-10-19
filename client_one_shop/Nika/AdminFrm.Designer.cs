@@ -48,6 +48,9 @@
             dataGridViewBooks = new DataGridView();
             buttonPOS = new Button();
             groupBox1 = new GroupBox();
+            button4 = new Button();
+            label6 = new Label();
+            label5 = new Label();
             label4 = new Label();
             textBox1 = new TextBox();
             button3 = new Button();
@@ -59,9 +62,6 @@
             label1 = new Label();
             dataGridView1 = new DataGridView();
             groupBox2 = new GroupBox();
-            label5 = new Label();
-            label6 = new Label();
-            button4 = new Button();
             ((System.ComponentModel.ISupportInitialize)dataGridViewBooks).BeginInit();
             groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)dataGridView1).BeginInit();
@@ -231,6 +231,7 @@
             buttonPOS.TabIndex = 20;
             buttonPOS.Text = "POS";
             buttonPOS.UseVisualStyleBackColor = true;
+            buttonPOS.Click += buttonPOS_Click;
             // 
             // groupBox1
             // 
@@ -268,6 +269,33 @@
             groupBox1.TabIndex = 21;
             groupBox1.TabStop = false;
             groupBox1.Text = "Information";
+            // 
+            // button4
+            // 
+            button4.Location = new Point(125, 276);
+            button4.Name = "button4";
+            button4.Size = new Size(230, 23);
+            button4.TabIndex = 31;
+            button4.Text = "Browse Image";
+            button4.UseVisualStyleBackColor = true;
+            // 
+            // label6
+            // 
+            label6.AutoSize = true;
+            label6.Location = new Point(125, 305);
+            label6.Name = "label6";
+            label6.Size = new Size(16, 15);
+            label6.TabIndex = 30;
+            label6.Text = "...";
+            // 
+            // label5
+            // 
+            label5.AutoSize = true;
+            label5.Location = new Point(17, 305);
+            label5.Name = "label5";
+            label5.Size = new Size(73, 15);
+            label5.TabIndex = 29;
+            label5.Text = "Image Path: ";
             // 
             // label4
             // 
@@ -367,33 +395,6 @@
             groupBox2.TabIndex = 24;
             groupBox2.TabStop = false;
             groupBox2.Text = "groupBox2";
-            // 
-            // label5
-            // 
-            label5.AutoSize = true;
-            label5.Location = new Point(17, 305);
-            label5.Name = "label5";
-            label5.Size = new Size(73, 15);
-            label5.TabIndex = 29;
-            label5.Text = "Image Path: ";
-            // 
-            // label6
-            // 
-            label6.AutoSize = true;
-            label6.Location = new Point(125, 305);
-            label6.Name = "label6";
-            label6.Size = new Size(16, 15);
-            label6.TabIndex = 30;
-            label6.Text = "...";
-            // 
-            // button4
-            // 
-            button4.Location = new Point(125, 276);
-            button4.Name = "button4";
-            button4.Size = new Size(230, 23);
-            button4.TabIndex = 31;
-            button4.Text = "Browse Image";
-            button4.UseVisualStyleBackColor = true;
             // 
             // AdminFrm
             // 

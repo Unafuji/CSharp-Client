@@ -1,54 +1,102 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data; 
+﻿
+using System.Data;
+using System.Globalization;
+using client_one_shop.Nika.Controllers;
+using client_one_shop.Nika.Models;
 
 namespace client_one_shop.Nika
 {
     public partial class MainForm : Form
     {
-        private List<Book> books;
-        private DataTable cartTable;
+        private readonly BookShopController _controller;
+        private List<BookItem> _books = new();
+        private DataTable _cartTable = default!;
 
         public MainForm()
         {
             InitializeComponent();
-            InitializeBooks();
-            InitializeCart();
-            DisplayBooks();
-            UpdateCartSummary();
+            _controller = new BookShopController();
+            this.Load += async (_, __) =>
+            {
+                InitializeCart();
+                await LoadBooksAsync();
+                RenderBooks();
+                UpdateCartSummary();
+            };
         }
 
-        private void InitializeBooks()
+        private async Task LoadBooksAsync()
         {
-            books = new List<Book>
+            var books = await _controller.GetBooksAsync();
+            _books = books.Select(b => new BookItem
             {
-                new Book("The Great Gatsby", "F. Scott Fitzgerald", 9.99m),
-                new Book("1984", "George Orwell", 12.99m),
-                new Book("To Kill a Mockingbird", "Harper Lee", 11.99m),
-                new Book("Pride and Prejudice", "Jane Austen", 8.99m),
-                new Book("The Catcher in the Rye", "J.D. Salinger", 10.99m),
-                new Book("Lord of the Rings", "J.R.R. Tolkien", 15.99m)
-            };
+                BookId = b.BookId,
+                Name = b.Name,
+                Author = b.Author ?? "",
+                Price = b.Price
+            }).ToList();
         }
 
         private void InitializeCart()
         {
-            cartTable = new DataTable();
-            cartTable.Columns.Add("Title", typeof(string));
-            cartTable.Columns.Add("Author", typeof(string));
-            cartTable.Columns.Add("Price", typeof(decimal));
-            dataGridViewCart.DataSource = cartTable;
+            _cartTable = new DataTable();
+            _cartTable.Columns.Add("BookId", typeof(int));
+            _cartTable.Columns.Add("Title", typeof(string));
+            _cartTable.Columns.Add("Author", typeof(string));
+            _cartTable.Columns.Add("Qty", typeof(int));
+            _cartTable.Columns.Add("UnitPrice", typeof(decimal));
+            _cartTable.Columns.Add("LineTotal", typeof(decimal), "Qty * UnitPrice");
+
+            dataGridViewCart.DataSource = _cartTable;
+            dataGridViewCart.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+
+            // Recompute totals when user edits Qty
+            dataGridViewCart.CellValueChanged += (_, e) =>
+            {
+                if (e.RowIndex >= 0 && dataGridViewCart.Columns[e.ColumnIndex].Name == "Qty")
+                    UpdateCartSummary();
+            };
+            dataGridViewCart.RowsRemoved += (_, __) => UpdateCartSummary();
         }
 
-        private void DisplayBooks()
+        private void AddToCart(BookItem book)
+        {
+            foreach (DataRow row in _cartTable.Rows)
+            {
+                if ((int)row["BookId"] == book.BookId)
+                {
+                    row["Qty"] = Convert.ToInt32(row["Qty"], CultureInfo.InvariantCulture) + 1;
+                    UpdateCartSummary();
+                    return;
+                }
+            }
+            _cartTable.Rows.Add(book.BookId, book.Name, book.Author, 1, book.Price, book.Price);
+            UpdateCartSummary();
+        }
+
+        private void UpdateCartSummary()
+        {
+            decimal total = 0m;
+            foreach (DataRow row in _cartTable.Rows)
+            {
+                var qty = Convert.ToInt32(row["Qty"], CultureInfo.InvariantCulture);
+                var price = Convert.ToDecimal(row["UnitPrice"], CultureInfo.InvariantCulture);
+                row["LineTotal"] = qty * price;
+                total += qty * price;
+            }
+            labelTotal.Text = $"Total: {total:C2}";
+            labelItemCount.Text = $"Items: {_cartTable.Rows.Count}";
+        }
+
+        private void RenderBooks()
         {
             flowLayoutPanelBooks.Controls.Clear();
-            foreach (var book in books)
+
+            foreach (var book in _books)
             {
                 var panel = new Panel
                 {
-                    Size = new Size(200, 250),
+                    Size = new Size(200, 270),
                     Margin = new Padding(10),
                     BorderStyle = BorderStyle.FixedSingle
                 };
@@ -57,41 +105,41 @@ namespace client_one_shop.Nika
                 {
                     Size = new Size(180, 150),
                     Location = new Point(10, 10),
-                    SizeMode = PictureBoxSizeMode.StretchImage
+                    SizeMode = PictureBoxSizeMode.StretchImage,
+                    BackColor = Color.WhiteSmoke
                 };
-
-                // Load image from project resources
-                try
+                using (var bmp = new Bitmap(1, 1)) { }
+                pictureBox.Paint += (_, e) =>
                 {
-                    //pictureBox.Image = Properties.Resources.book_placeholder; // Ensure book_placeholder is added to resources
-                }
-                catch
-                {
-                    // Fallback if resource is missing
-                    pictureBox.BackColor = Color.LightGray;
-                    pictureBox.Text = "No Image";
-                }
+                    var rect = new Rectangle(0, 0, pictureBox.Width - 1, pictureBox.Height - 1);
+                    e.Graphics.DrawRectangle(Pens.LightGray, rect);
+                    TextRenderer.DrawText(e.Graphics, "No Image", pictureBox.Font,
+                        new Rectangle(0, 0, pictureBox.Width, pictureBox.Height),
+                        SystemColors.GrayText, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+                };
 
                 var titleLabel = new Label
                 {
-                    Text = book.Title,
-                    Location = new Point(10, 170),
+                    Text = book.Name,
+                    Location = new Point(10, 165),
                     Size = new Size(180, 20),
-                    TextAlign = ContentAlignment.MiddleCenter
+                    TextAlign = ContentAlignment.MiddleCenter,
+                    AutoEllipsis = true
                 };
 
                 var authorLabel = new Label
                 {
                     Text = book.Author,
-                    Location = new Point(10, 190),
+                    Location = new Point(10, 185),
                     Size = new Size(180, 20),
-                    TextAlign = ContentAlignment.MiddleCenter
+                    TextAlign = ContentAlignment.MiddleCenter,
+                    AutoEllipsis = true
                 };
 
                 var priceLabel = new Label
                 {
-                    Text = $"${book.Price:F2}",
-                    Location = new Point(10, 210),
+                    Text = $"{book.Price:C2}",
+                    Location = new Point(10, 205),
                     Size = new Size(180, 20),
                     TextAlign = ContentAlignment.MiddleCenter
                 };
@@ -100,60 +148,21 @@ namespace client_one_shop.Nika
                 {
                     Text = "Add to Cart",
                     Location = new Point(10, 230),
-                    Size = new Size(180, 20),
+                    Size = new Size(180, 28),
                     Tag = book
                 };
-                addButton.Click += AddToCartButton_Click;
+                addButton.Click += (_, __) => AddToCart(book);
 
                 panel.Controls.AddRange(new Control[] { pictureBox, titleLabel, authorLabel, priceLabel, addButton });
                 flowLayoutPanelBooks.Controls.Add(panel);
             }
         }
 
-        private void AddToCartButton_Click(object sender, EventArgs e)
-        {
-            var button = sender as Button;
-            var book = button.Tag as Book;
-            cartTable.Rows.Add(book.Title, book.Author, book.Price);
-            UpdateCartSummary();
-        }
-
-        private void UpdateCartSummary()
-        {
-            decimal total = cartTable.AsEnumerable().Sum(row => row.Field<decimal>("Price"));
-            labelTotal.Text = $"Total: ${total:F2}";
-            labelItemCount.Text = $"Items: {cartTable.Rows.Count}";
-        }
-
-        private class Book
-        {
-            public string Title { get; set; }
-            public string Author { get; set; }
-            public decimal Price { get; set; }
-
-            public Book(string title, string author, decimal price)
-            {
-                Title = title;
-                Author = author;
-                Price = price;
-            }
-        }
-
-        private void labelItemCount_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void MainForm_Load(object sender, EventArgs e)
-        {
-
-        }
-
         private void button1_Click(object sender, EventArgs e)
         {
-            AdminFrm adminFrm = new AdminFrm();
+            var adminFrm = new AdminFrm();
             adminFrm.Show();
-            this.Hide();    
+            this.Hide();
         }
     }
 }
