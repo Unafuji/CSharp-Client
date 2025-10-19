@@ -46,7 +46,6 @@
             dataGridViewBooks = new DataGridView();
             buttonPOS = new Button();
             groupBox1 = new GroupBox();
-            button5 = new Button();
             button4 = new Button();
             label6 = new Label();
             label5 = new Label();
@@ -59,6 +58,7 @@
             button1 = new Button();
             label2 = new Label();
             label1 = new Label();
+            button5 = new Button();
             dataGridView1 = new DataGridView();
             groupBox2 = new GroupBox();
             ((System.ComponentModel.ISupportInitialize)dataGridViewBooks).BeginInit();
@@ -252,16 +252,6 @@
             groupBox1.TabStop = false;
             groupBox1.Text = "Information";
             // 
-            // button5
-            // 
-            button5.Location = new Point(989, 47);
-            button5.Name = "button5";
-            button5.Size = new Size(75, 23);
-            button5.TabIndex = 32;
-            button5.Text = "Sales";
-            button5.UseVisualStyleBackColor = true;
-            button5.Click += button5_Click;
-            // 
             // button4
             // 
             button4.Location = new Point(125, 276);
@@ -285,9 +275,9 @@
             label5.AutoSize = true;
             label5.Location = new Point(17, 305);
             label5.Name = "label5";
-            label5.Size = new Size(73, 15);
+            label5.Size = new Size(58, 15);
             label5.TabIndex = 29;
-            label5.Text = "Image Path: ";
+            label5.Text = "Pdf Path: ";
             // 
             // label4
             // 
@@ -369,6 +359,16 @@
             label1.Size = new Size(73, 15);
             label1.TabIndex = 19;
             label1.Text = "Image Path: ";
+            // 
+            // button5
+            // 
+            button5.Location = new Point(989, 47);
+            button5.Name = "button5";
+            button5.Size = new Size(75, 23);
+            button5.TabIndex = 32;
+            button5.Text = "Sales";
+            button5.UseVisualStyleBackColor = true;
+            button5.Click += button5_Click;
             // 
             // dataGridView1
             // 

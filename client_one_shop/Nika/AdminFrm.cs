@@ -12,14 +12,16 @@ namespace client_one_shop.Nika
     public partial class AdminFrm : Form
     {
         private readonly BookShopController _controller;
+        // Staged file selections (set by Browse buttons, used on Create)
+        private string? _pendingImagePath;
+        private string? _pendingImageContentType;
+        private string? _pendingPdfPath;
 
         public AdminFrm()
         {
             InitializeComponent();
             _controller = new BookShopController();
-
-            // Your Designer didn’t wire this. Do it here so the image upload actually fires.
-            // Designer already wires button2 -> BtnBrowsePDF, keep that.
+             
             button4.Click += BtnBrowseImage;
         }
 
@@ -74,12 +76,11 @@ namespace client_one_shop.Nika
             }
         }
 
-
         private async void buttonCreate_Click(object sender, EventArgs e)
         {
             try
-            { 
-                var name = textBoxISBN13.Text?.Trim();    
+            {
+                var name = textBoxISBN13.Text?.Trim();
                 if (string.IsNullOrWhiteSpace(name))
                 {
                     MessageBox.Show("Name is required.", "Validation",
@@ -87,7 +88,7 @@ namespace client_one_shop.Nika
                     return;
                 }
 
-                var author = textBoxAuthorId.Text?.Trim();   
+                var author = textBoxAuthorId.Text?.Trim();
                 if (!TryParseDecimal(textBoxListPrice.Text, out var price) || price <= 0)
                 {
                     MessageBox.Show("Price must be a positive number.", "Validation",
@@ -95,9 +96,10 @@ namespace client_one_shop.Nika
                     return;
                 }
 
-                var isbn = textBoxCostPrice.Text?.Trim();  
-                DateTime? publishedDate = TryParseDate(textBoxStock.Text); 
+                var isbn = textBoxCostPrice.Text?.Trim();
+                DateTime? publishedDate = TryParseDate(textBoxStock.Text);
 
+                // 1) Create the book
                 var newId = await _controller.CreateBookAsync(
                     name: name,
                     price: price,
@@ -107,11 +109,19 @@ namespace client_one_shop.Nika
                 );
 
                 textBoxBookId.Text = newId.ToString();
+
+                // 2) Upload whatever was staged
+                await UploadPendingAsync(newId);
+
                 MessageBox.Show("Book created.", "Success",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
 
+                // 3) refresh and clear staging
                 await LoadBooksAsync();
-                AutoFillDates(); // refresh defaults for next create
+                AutoFillDates();
+                _pendingPdfPath = null;
+                _pendingImagePath = null;
+                _pendingImageContentType = null;
             }
             catch (Exception ex)
             {
@@ -157,10 +167,18 @@ namespace client_one_shop.Nika
                     publishedDate
                 );
 
+                // New: attach any staged files to this existing book
+                await UploadPendingAsync(id);
+
                 MessageBox.Show("Book updated.", "Success",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
 
                 await LoadBooksAsync();
+
+                // optional: clear staged after successful update
+                _pendingPdfPath = null;
+                _pendingImagePath = null;
+                _pendingImageContentType = null;
             }
             catch (Exception ex)
             {
@@ -190,7 +208,7 @@ namespace client_one_shop.Nika
                 await LoadBooksAsync();
                 ClearForm();
             }
-            catch (SqlException ex) when (ex.Number == 547)  
+            catch (SqlException ex) when (ex.Number == 547)
             {
                 MessageBox.Show("Cannot delete: book is referenced by other data.", "Blocked",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -211,15 +229,8 @@ namespace client_one_shop.Nika
             textBoxListPrice.Text = row.Cells["Price"].Value?.ToString() ?? "";
         }
 
-        private async void BtnBrowsePDF(object sender, EventArgs e)
+        private void BtnBrowsePDF(object sender, EventArgs e)
         {
-            if (!int.TryParse(textBoxBookId.Text, out var bookId))
-            {
-                MessageBox.Show("Select or create a book first.", "Warning",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
             using var dlg = new OpenFileDialog
             {
                 Filter = "PDF Files|*.pdf",
@@ -228,42 +239,17 @@ namespace client_one_shop.Nika
             };
             if (dlg.ShowDialog() != DialogResult.OK) return;
 
-            try
-            {
-                using var fs = File.OpenRead(dlg.FileName);
-                await _controller.AddBookPdfAsync(
-                    bookId,
-                    Path.GetFileName(dlg.FileName),
-                    "application/pdf",
-                    fs
-                );
+            // Stage only; upload happens after Create/Update
+            _pendingPdfPath = dlg.FileName;
 
-                // show selected PDF path in the lower label (label2 per Designer)
-                label2.Text = dlg.FileName;
-                MessageBox.Show("PDF uploaded.", "Success",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            catch (SqlException ex) when (ex.Number == 547)
-            {
-                MessageBox.Show("That BookId does not exist. Create the book first.",
-                    "Foreign Key blocked", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"PDF upload failed: {ex.Message}", "Error",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            // Designer says label6 is for Pdf Path
+            label6.Text = dlg.FileName;
         }
 
-        private async void BtnBrowseImage(object? sender, EventArgs e)
-        {
-            if (!int.TryParse(textBoxBookId.Text, out var bookId))
-            {
-                MessageBox.Show("Select or create a book first.", "Warning",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
 
+
+        private void BtnBrowseImage(object? sender, EventArgs e)
+        {
             using var dlg = new OpenFileDialog
             {
                 Filter = "Image Files|*.jpg;*.jpeg;*.png;*.gif;*.bmp;*.webp",
@@ -272,32 +258,12 @@ namespace client_one_shop.Nika
             };
             if (dlg.ShowDialog() != DialogResult.OK) return;
 
-            try
-            {
-                using var fs = File.OpenRead(dlg.FileName);
+            // Stage only; DO NOT upload here
+            _pendingImagePath = dlg.FileName;
+            _pendingImageContentType = GetImageContentTypeFromExtension(Path.GetExtension(dlg.FileName));
 
-                var contentType = GetImageContentTypeFromExtension(Path.GetExtension(dlg.FileName));
-                await _controller.AddBookImageAsync(
-                    bookId,
-                    Path.GetFileName(dlg.FileName),
-                    contentType,
-                    fs
-                );
-
-                label6.Text = dlg.FileName;
-                MessageBox.Show("Image uploaded.", "Success",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            catch (SqlException ex) when (ex.Number == 547)
-            {
-                MessageBox.Show("That BookId does not exist. Create the book first.",
-                    "Foreign Key blocked", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Image upload failed: {ex.Message}", "Error",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            // Designer says label2 is for Image Path
+            label2.Text = dlg.FileName;
         }
 
         private static string GetImageContentTypeFromExtension(string? ext)
@@ -333,11 +299,17 @@ namespace client_one_shop.Nika
             textBoxCostPrice.Clear();
             textBoxStock.Clear();
             textBox1.Clear();
-            label2.Text = "...";
-            label6.Text = "...";
+            label2.Text = "..."; // pdf path label
+            label6.Text = "..."; // image path label
             dataGridViewBooks.ClearSelection();
             AutoFillDates();
+
+            // also clear staged paths
+            _pendingPdfPath = null;
+            _pendingImagePath = null;
+            _pendingImageContentType = null;
         }
+
 
         private void lbPdfPath(object sender, EventArgs e) { }
 
@@ -365,8 +337,8 @@ namespace client_one_shop.Nika
 
         private void button5_Click(object sender, EventArgs e)
         {
-            SalesForm sales = new SalesForm();  
-            sales.Show();   
+            SalesForm sales = new SalesForm();
+            sales.Show();
             this.Hide();
         }
         private void dataGridViewBooks_CellClick(object sender, DataGridViewCellEventArgs e)
@@ -388,6 +360,23 @@ namespace client_one_shop.Nika
             textBox1.Text = (row.Cells["CreatedAtUtc"].Value is DateTime cd)
                                         ? cd.ToString("yyyy-MM-dd HH:mm:ss")
                                         : string.Empty;
+        }
+        private async Task UploadPendingAsync(int bookId)
+        {
+            // upload PDF if staged
+            if (!string.IsNullOrWhiteSpace(_pendingPdfPath) && File.Exists(_pendingPdfPath))
+            {
+                using var pdf = File.OpenRead(_pendingPdfPath);
+                await _controller.AddBookPdfAsync(bookId, Path.GetFileName(_pendingPdfPath), "application/pdf", pdf);
+            }
+
+            // upload Image if staged
+            if (!string.IsNullOrWhiteSpace(_pendingImagePath) && File.Exists(_pendingImagePath))
+            {
+                var contentType = _pendingImageContentType ?? "application/octet-stream";
+                using var img = File.OpenRead(_pendingImagePath);
+                await _controller.AddBookImageAsync(bookId, Path.GetFileName(_pendingImagePath), contentType, img);
+            }
         }
 
     }

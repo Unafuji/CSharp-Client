@@ -212,10 +212,7 @@ namespace client_one_shop.Nika
             labelTotal.Text = $"Total: {total:C2}";
             labelItemCount.Text = $"Items: {_cartTable.Rows.Count}";
         }
-
-        /* =========================
-           UI: book cards
-           ========================= */
+         
         private async void RenderBooks()
         {
             flowLayoutPanelBooks.Controls.Clear();
