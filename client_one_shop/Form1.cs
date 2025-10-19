@@ -1,15 +1,10 @@
+using client_one_shop.Connections;
 using client_one_shop.Controllers;
 using client_one_shop.Controls;
 using client_one_shop.Models;
-using Microsoft.Data.SqlClient;
-using System;
-using System.Collections.Generic;
+using Microsoft.Data.SqlClient; 
 using System.Data;
-using System.Drawing;
-using System.Globalization;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Windows.Forms;
+using System.Globalization; 
 
 namespace client_one_shop
 {
@@ -289,7 +284,7 @@ namespace client_one_shop
             string? salesPerson,
             DataTable itemsTvp)
         {
-            using var conn = new SqlConnection(RetrievalData._connectionString);
+            using var conn = new SqlConnection(ConnectionString.connectionString);
             using var cmd = new SqlCommand("dbo.InsertSale", conn) { CommandType = CommandType.StoredProcedure };
 
             cmd.Parameters.Add(new SqlParameter("@OrderID", SqlDbType.Int) { Value = (object?)orderId ?? DBNull.Value });
