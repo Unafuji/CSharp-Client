@@ -257,12 +257,10 @@ namespace client_one_shop.Nika
                 Multiselect = false
             };
             if (dlg.ShowDialog() != DialogResult.OK) return;
-
-            // Stage only; DO NOT upload here
+             
             _pendingImagePath = dlg.FileName;
             _pendingImageContentType = GetImageContentTypeFromExtension(Path.GetExtension(dlg.FileName));
-
-            // Designer says label2 is for Image Path
+             
             label2.Text = dlg.FileName;
         }
 
