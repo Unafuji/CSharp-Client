@@ -229,7 +229,6 @@ namespace client_one_shop.Nika
                     BorderStyle = BorderStyle.FixedSingle
                 };
 
-                // Try to load image from DB
                 PictureBox pictureBox = new PictureBox
                 {
                     Size = new Size(180, 150),
@@ -238,11 +237,8 @@ namespace client_one_shop.Nika
                     BackColor = Color.WhiteSmoke
                 };
 
-                // placeholder until async load finishes
                 pictureBox.Image = CreatePlaceholder("IMG");
 
-                // Async load image
-                // Async load image for this tile
                 _ = Task.Run(async () =>
                 {
                     try
@@ -256,7 +252,6 @@ namespace client_one_shop.Nika
                         }
                         else
                         {
-                            // No cover image → check if it has any PDF
                             var hasPdf = await _controller.BookHasPdfAsync(book.BookId);
                             pictureBox.Invoke(new Action(() =>
                                 pictureBox.Image = hasPdf
