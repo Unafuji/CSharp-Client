@@ -205,7 +205,6 @@
             dataGridViewBooks.Size = new Size(685, 561);
             dataGridViewBooks.TabIndex = 19;
             dataGridViewBooks.CellClick += dataGridViewBooks_CellClick;
-            dataGridViewBooks.SelectionChanged += dataGridViewBooks_SelectionChanged;
             // 
             // buttonPOS
             // 
