@@ -1,8 +1,13 @@
-﻿
+﻿using System;
+using System.Collections.Generic;
 using System.Data;
+using System.Drawing;
 using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 using client_one_shop.Nika.Controllers;
-using client_one_shop.Nika.Models;
 
 namespace client_one_shop.Nika
 {
@@ -11,20 +16,33 @@ namespace client_one_shop.Nika
         private readonly BookShopController _controller;
         private List<BookItem> _books = new();
         private DataTable _cartTable = default!;
+        private readonly SalesController _salesController = new SalesController();
+
+        // thumbnail cache + placeholders
+        private readonly Dictionary<int, Image> _thumbCache = new();
+        private Image? _placeholderImage;
+        private Image? _pdfBadgeImage;
 
         public MainForm()
         {
             InitializeComponent();
             _controller = new BookShopController();
+
+            // Build cart once with correct schema
+            InitializeCart();
+
+            // Load async after UI is ready
             this.Load += async (_, __) =>
             {
-                InitializeCart();
                 await LoadBooksAsync();
                 RenderBooks();
                 UpdateCartSummary();
             };
         }
 
+        /* =========================
+           Data loading from controller
+           ========================= */
         private async Task LoadBooksAsync()
         {
             var books = await _controller.GetBooksAsync();
@@ -37,9 +55,15 @@ namespace client_one_shop.Nika
             }).ToList();
         }
 
+        /* =========================
+           Cart table + grid
+           ========================= */
         private void InitializeCart()
         {
             _cartTable = new DataTable();
+
+            // Image column first
+            _cartTable.Columns.Add("Thumb", typeof(Image));
             _cartTable.Columns.Add("BookId", typeof(int));
             _cartTable.Columns.Add("Title", typeof(string));
             _cartTable.Columns.Add("Author", typeof(string));
@@ -50,17 +74,42 @@ namespace client_one_shop.Nika
             dataGridViewCart.DataSource = _cartTable;
             dataGridViewCart.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
 
-            // Recompute totals when user edits Qty
-            dataGridViewCart.CellValueChanged += (_, e) =>
+            // Ensure image column renders properly
+            if (dataGridViewCart.Columns["Thumb"] is DataGridViewImageColumn imgCol)
             {
-                if (e.RowIndex >= 0 && dataGridViewCart.Columns[e.ColumnIndex].Name == "Qty")
+                imgCol.HeaderText = "";
+                imgCol.ImageLayout = DataGridViewImageCellLayout.Zoom;
+                //imgCol.Width = 56;
+            }
+            else
+            {
+                var newImgCol = new DataGridViewImageColumn
+                {
+                    DataPropertyName = "Thumb",
+                    HeaderText = "",
+                    ImageLayout = DataGridViewImageCellLayout.Zoom,
+                    Width = 56
+                };
+                dataGridViewCart.Columns.Insert(0, newImgCol);
+            }
+            dataGridViewCart.RowTemplate.Height = 56;
+
+            // Recalc totals on qty edit/remove
+            dataGridViewCart.CellEndEdit += (_, e) =>
+            {
+                if (e.RowIndex >= 0 && dataGridViewCart.Columns[e.ColumnIndex].DataPropertyName == "Qty")
                     UpdateCartSummary();
             };
             dataGridViewCart.RowsRemoved += (_, __) => UpdateCartSummary();
+
+            // init placeholders once
+            _placeholderImage = CreatePlaceholder("IMG");
+            _pdfBadgeImage = CreatePlaceholder("PDF", back: Color.Firebrick);
         }
 
         private void AddToCart(BookItem book)
         {
+            // If exists, bump qty
             foreach (DataRow row in _cartTable.Rows)
             {
                 if ((int)row["BookId"] == book.BookId)
@@ -70,9 +119,86 @@ namespace client_one_shop.Nika
                     return;
                 }
             }
-            _cartTable.Rows.Add(book.BookId, book.Name, book.Author, 1, book.Price, book.Price);
+
+            // New row with placeholder; LineTotal is computed, do not assign
+            var r = _cartTable.NewRow();
+            r["Thumb"] = _placeholderImage;
+            r["BookId"] = book.BookId;
+            r["Title"] = book.Name;
+            r["Author"] = book.Author;
+            r["Qty"] = 1;
+            r["UnitPrice"] = book.Price;
+            _cartTable.Rows.Add(r);
+
             UpdateCartSummary();
+
+            // Fire-and-forget thumbnail load
+            _ = LoadThumbForRowAsync(r, book.BookId);
         }
+
+        private async Task LoadThumbForRowAsync(DataRow row, int bookId)
+        {
+            try
+            {
+                if (_thumbCache.TryGetValue(bookId, out var cached))
+                {
+                    SetRowThumb(row, cached);
+                    return;
+                }
+
+                // Try cover image
+                var bytes = await _controller.GetBookCoverBytesAsync(bookId);
+                Image? img = null;
+                if (bytes != null && bytes.Length > 0)
+                {
+                    using var ms = new MemoryStream(bytes);
+                    img = Image.FromStream(ms);
+                }
+
+                // Fallback: PDF badge if any PDF exists, else generic IMG
+                if (img == null)
+                {
+                    var hasPdf = await _controller.BookHasPdfAsync(bookId);
+                    img = hasPdf ? _pdfBadgeImage : _placeholderImage;
+                }
+
+                if (img != null)
+                    _thumbCache[bookId] = img;
+
+                SetRowThumb(row, img);
+            }
+            catch
+            {
+                SetRowThumb(row, _placeholderImage);
+            }
+        }
+
+        // Marshal DataTable mutation to UI thread
+        private void SetRowThumb(DataRow row, Image? img)
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action(() => row["Thumb"] = img));
+            }
+            else
+            {
+                row["Thumb"] = img;
+            }
+        }
+
+        private static Image CreatePlaceholder(string text, int w = 180, int h = 150, Color? back = null)
+        {
+            var bg = back ?? Color.LightGray;
+            var bmp = new Bitmap(w, h);
+            using var g = Graphics.FromImage(bmp);
+            g.Clear(bg);
+            var font = new Font("Segoe UI", 14, FontStyle.Bold);
+            var rect = new Rectangle(0, 0, w, h);
+            TextRenderer.DrawText(g, text, font, rect, Color.White,
+                TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+            return bmp;
+        }
+
 
         private void UpdateCartSummary()
         {
@@ -81,14 +207,16 @@ namespace client_one_shop.Nika
             {
                 var qty = Convert.ToInt32(row["Qty"], CultureInfo.InvariantCulture);
                 var price = Convert.ToDecimal(row["UnitPrice"], CultureInfo.InvariantCulture);
-                row["LineTotal"] = qty * price;
                 total += qty * price;
             }
             labelTotal.Text = $"Total: {total:C2}";
             labelItemCount.Text = $"Items: {_cartTable.Rows.Count}";
         }
 
-        private void RenderBooks()
+        /* =========================
+           UI: book cards
+           ========================= */
+        private async void RenderBooks()
         {
             flowLayoutPanelBooks.Controls.Clear();
 
@@ -96,28 +224,55 @@ namespace client_one_shop.Nika
             {
                 var panel = new Panel
                 {
-                    Size = new Size(200, 270),
+                    Size = new Size(200, 280),
                     Margin = new Padding(10),
                     BorderStyle = BorderStyle.FixedSingle
                 };
 
-                var pictureBox = new PictureBox
+                // Try to load image from DB
+                PictureBox pictureBox = new PictureBox
                 {
                     Size = new Size(180, 150),
                     Location = new Point(10, 10),
                     SizeMode = PictureBoxSizeMode.StretchImage,
                     BackColor = Color.WhiteSmoke
                 };
-                using (var bmp = new Bitmap(1, 1)) { }
-                pictureBox.Paint += (_, e) =>
-                {
-                    var rect = new Rectangle(0, 0, pictureBox.Width - 1, pictureBox.Height - 1);
-                    e.Graphics.DrawRectangle(Pens.LightGray, rect);
-                    TextRenderer.DrawText(e.Graphics, "No Image", pictureBox.Font,
-                        new Rectangle(0, 0, pictureBox.Width, pictureBox.Height),
-                        SystemColors.GrayText, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
-                };
 
+                // placeholder until async load finishes
+                pictureBox.Image = CreatePlaceholder("IMG");
+
+                // Async load image
+                // Async load image for this tile
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var bytes = await _controller.GetBookCoverBytesAsync(book.BookId);
+                        if (bytes != null && bytes.Length > 0)
+                        {
+                            using var ms = new MemoryStream(bytes);
+                            var img = Image.FromStream(ms);
+                            pictureBox.Invoke(new Action(() => pictureBox.Image = img));
+                        }
+                        else
+                        {
+                            // No cover image → check if it has any PDF
+                            var hasPdf = await _controller.BookHasPdfAsync(book.BookId);
+                            pictureBox.Invoke(new Action(() =>
+                                pictureBox.Image = hasPdf
+                                    ? CreatePlaceholder("PDF", back: Color.Firebrick)
+                                    : CreatePlaceholder("IMG")));
+                        }
+                    }
+                    catch
+                    {
+                        pictureBox.Invoke(new Action(() =>
+                            pictureBox.Image = CreatePlaceholder("ERR", back: Color.DarkGray)));
+                    }
+                });
+
+
+                // Text labels
                 var titleLabel = new Label
                 {
                     Text = book.Name,
@@ -148,12 +303,15 @@ namespace client_one_shop.Nika
                 {
                     Text = "Add to Cart",
                     Location = new Point(10, 230),
-                    Size = new Size(180, 28),
-                    Tag = book
+                    Size = new Size(180, 30)
                 };
                 addButton.Click += (_, __) => AddToCart(book);
 
-                panel.Controls.AddRange(new Control[] { pictureBox, titleLabel, authorLabel, priceLabel, addButton });
+                panel.Controls.AddRange(new Control[]
+                {
+            pictureBox, titleLabel, authorLabel, priceLabel, addButton
+                });
+
                 flowLayoutPanelBooks.Controls.Add(panel);
             }
         }
@@ -163,6 +321,54 @@ namespace client_one_shop.Nika
             var adminFrm = new AdminFrm();
             adminFrm.Show();
             this.Hide();
+        }
+
+        private sealed class BookItem
+        {
+            public int BookId { get; set; }
+            public string Name { get; set; } = "";
+            public string Author { get; set; } = "";
+            public decimal Price { get; set; }
+        }
+
+        private void BtnSale(object sender, EventArgs e)
+        {
+            if (_cartTable.Rows.Count == 0)
+            {
+                MessageBox.Show("Cart is empty. Add items to proceed with sale.", "Empty Cart", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            try
+            {
+                decimal totalAmount = 0m;
+                foreach (DataRow row in _cartTable.Rows)
+                {
+                    var qty = Convert.ToInt32(row["Qty"], CultureInfo.InvariantCulture);
+                    var price = Convert.ToDecimal(row["UnitPrice"], CultureInfo.InvariantCulture);
+                    totalAmount += qty * price;
+                }
+
+                int saleId = _salesController.CreateSale(DateTime.UtcNow, totalAmount);
+
+                foreach (DataRow row in _cartTable.Rows)
+                {
+                    int bookId = (int)row["BookId"];
+                    int qty = Convert.ToInt32(row["Qty"], CultureInfo.InvariantCulture);
+                    decimal unitPrice = Convert.ToDecimal(row["UnitPrice"], CultureInfo.InvariantCulture);
+
+                    _salesController.CreateSaleItem(saleId, bookId, qty, unitPrice);
+                }
+
+                _cartTable.Clear();
+                UpdateCartSummary();
+
+                MessageBox.Show($"Sale completed! Sale ID: {saleId}", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"An error occurred during sale:\n{ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 }

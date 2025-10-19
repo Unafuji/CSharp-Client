@@ -46,10 +46,22 @@ namespace client_one_shop.Nika
                 var dt = new DataTable();
                 dt.Columns.Add("BookId", typeof(int));
                 dt.Columns.Add("Name", typeof(string));
+                dt.Columns.Add("Author", typeof(string));
                 dt.Columns.Add("Price", typeof(decimal));
+                dt.Columns.Add("ISBN", typeof(string));
+                dt.Columns.Add("PublishedDate", typeof(DateTime));
+                dt.Columns.Add("CreatedAtUtc", typeof(DateTime));
 
                 foreach (var b in books)
-                    dt.Rows.Add(b.BookId, b.Name, b.Price);
+                    dt.Rows.Add(
+                        b.BookId,
+                        b.Name,
+                        b.Author,
+                        b.Price,
+                        b.ISBN,
+                        b.PublishedDate,
+                        b.CreatedAtUtc
+                    );
 
                 dataGridViewBooks.AutoGenerateColumns = true;
                 dataGridViewBooks.DataSource = dt;
@@ -62,12 +74,12 @@ namespace client_one_shop.Nika
             }
         }
 
+
         private async void buttonCreate_Click(object sender, EventArgs e)
         {
             try
-            {
-                // Your labels are “Name/Title/Author/Price/ISBN/PublishedDate”
-                var name = textBoxISBN13.Text?.Trim();      // labeled “Name”
+            { 
+                var name = textBoxISBN13.Text?.Trim();    
                 if (string.IsNullOrWhiteSpace(name))
                 {
                     MessageBox.Show("Name is required.", "Validation",
@@ -75,7 +87,7 @@ namespace client_one_shop.Nika
                     return;
                 }
 
-                var author = textBoxAuthorId.Text?.Trim();  // labeled “Author”
+                var author = textBoxAuthorId.Text?.Trim();   
                 if (!TryParseDecimal(textBoxListPrice.Text, out var price) || price <= 0)
                 {
                     MessageBox.Show("Price must be a positive number.", "Validation",
@@ -83,8 +95,8 @@ namespace client_one_shop.Nika
                     return;
                 }
 
-                var isbn = textBoxCostPrice.Text?.Trim();   // labeled “ISBN”
-                DateTime? publishedDate = TryParseDate(textBoxStock.Text); // labeled “PublishedDate”
+                var isbn = textBoxCostPrice.Text?.Trim();  
+                DateTime? publishedDate = TryParseDate(textBoxStock.Text); 
 
                 var newId = await _controller.CreateBookAsync(
                     name: name,
@@ -178,7 +190,7 @@ namespace client_one_shop.Nika
                 await LoadBooksAsync();
                 ClearForm();
             }
-            catch (SqlException ex) when (ex.Number == 547) // FK violation
+            catch (SqlException ex) when (ex.Number == 547)  
             {
                 MessageBox.Show("Cannot delete: book is referenced by other data.", "Blocked",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -196,9 +208,7 @@ namespace client_one_shop.Nika
 
             var row = dataGridViewBooks.SelectedRows[0];
             textBoxBookId.Text = row.Cells["BookId"].Value?.ToString() ?? "";
-            textBoxTitle.Text = row.Cells["Name"].Value?.ToString() ?? "";
             textBoxListPrice.Text = row.Cells["Price"].Value?.ToString() ?? "";
-            // Keep date boxes as user-entered or auto-filled; don’t overwrite with partial grid metadata.
         }
 
         private async void BtnBrowsePDF(object sender, EventArgs e)
@@ -273,7 +283,7 @@ namespace client_one_shop.Nika
                     contentType,
                     fs
                 );
-                 
+
                 label6.Text = dlg.FileName;
                 MessageBox.Show("Image uploaded.", "Success",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -305,11 +315,11 @@ namespace client_one_shop.Nika
         }
 
         private void BtnAdd(object sender, EventArgs e)
-        { 
+        {
         }
 
         private void BtnMultiInsert(object sender, EventArgs e)
-        { 
+        {
         }
 
         private void BtnClearTextBox(object sender, EventArgs e) => ClearForm();
@@ -317,17 +327,14 @@ namespace client_one_shop.Nika
         private void ClearForm()
         {
             textBoxBookId.Clear();
-            textBoxISBN13.Clear();     
-            textBoxTitle.Clear();      
-            textBoxAuthorId.Clear();   
-            textBoxListPrice.Clear();  
-            textBoxCostPrice.Clear();  
-            textBoxStock.Clear();      
-            textBox1.Clear();          
-                                       
-            label2.Text = "...";       
-            label6.Text = "...";       
-
+            textBoxISBN13.Clear();
+            textBoxAuthorId.Clear();
+            textBoxListPrice.Clear();
+            textBoxCostPrice.Clear();
+            textBoxStock.Clear();
+            textBox1.Clear();
+            label2.Text = "...";
+            label6.Text = "...";
             dataGridViewBooks.ClearSelection();
             AutoFillDates();
         }
@@ -355,5 +362,33 @@ namespace client_one_shop.Nika
             mainForm.Show();
             this.Hide();
         }
+
+        private void button5_Click(object sender, EventArgs e)
+        {
+            SalesForm sales = new SalesForm();  
+            sales.Show();   
+            this.Hide();
+        }
+        private void dataGridViewBooks_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+            // Ignore header clicks or empty rows
+            if (e.RowIndex < 0 || dataGridViewBooks.CurrentRow == null) return;
+
+            var row = dataGridViewBooks.Rows[e.RowIndex];
+
+            // Safely assign values from the grid to the form fields
+            textBoxBookId.Text = row.Cells["BookId"].Value?.ToString() ?? string.Empty;
+            textBoxISBN13.Text = row.Cells["Name"].Value?.ToString() ?? string.Empty;
+            textBoxAuthorId.Text = row.Cells["Author"].Value?.ToString() ?? string.Empty;
+            textBoxListPrice.Text = row.Cells["Price"].Value?.ToString() ?? string.Empty;
+            textBoxCostPrice.Text = row.Cells["ISBN"].Value?.ToString() ?? string.Empty;
+            textBoxStock.Text = (row.Cells["PublishedDate"].Value is DateTime pd)
+                                        ? pd.ToString("yyyy-MM-dd")
+                                        : string.Empty;
+            textBox1.Text = (row.Cells["CreatedAtUtc"].Value is DateTime cd)
+                                        ? cd.ToString("yyyy-MM-dd HH:mm:ss")
+                                        : string.Empty;
+        }
+
     }
 }

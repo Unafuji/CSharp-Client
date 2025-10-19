@@ -1,7 +1,7 @@
-﻿ using client_one_shop.Connections;
+﻿using client_one_shop.Connections;
 using client_one_shop.Nika.Models;
-using Microsoft.Data.SqlClient; 
-using System.Data; 
+using Microsoft.Data.SqlClient;
+using System.Data;
 
 namespace client_one_shop.Nika.Controllers
 {
@@ -11,10 +11,6 @@ namespace client_one_shop.Nika.Controllers
         {
             return new SqlConnection(ConnectionString.connectionString);
         }
-
-        /* =========================
-           Books CRUD
-           ========================= */
 
         public async Task<int> CreateBookAsync(
             string name,
@@ -110,9 +106,6 @@ namespace client_one_shop.Nika.Controllers
             return rows;
         }
 
-        /* =========================
-           BookImages CRUD
-           ========================= */
 
         public async Task<int> AddBookImageAsync(
             int bookId,
@@ -163,11 +156,6 @@ namespace client_one_shop.Nika.Controllers
             var result = await cmd.ExecuteScalarAsync(ct);
             return Convert.ToInt32(result);
         }
-
-        /* =========================
-           Helper: Mappers
-           ========================= */
-
         private static Book MapBook(SqlDataReader r) => new Book
         {
             BookId = r.GetInt32(r.GetOrdinal("BookId")),
@@ -178,5 +166,40 @@ namespace client_one_shop.Nika.Controllers
             PublishedDate = r.IsDBNull(r.GetOrdinal("PublishedDate")) ? (DateTime?)null : r.GetDateTime(r.GetOrdinal("PublishedDate")),
             CreatedAtUtc = r.GetDateTime(r.GetOrdinal("CreatedAtUtc"))
         };
+
+        public async Task<bool> BookHasPdfAsync(int bookId, CancellationToken ct = default)
+        {
+            using var conn = CreateConnection();
+            await conn.OpenAsync(ct);
+
+            using var cmd = new SqlCommand(@"
+        IF EXISTS (SELECT 1 FROM dbo.BookFiles WHERE BookId = @id)
+            SELECT 1
+        ELSE
+            SELECT 0;", conn);
+            cmd.Parameters.AddWithValue("@id", bookId);
+
+            var val = await cmd.ExecuteScalarAsync(ct);
+            return Convert.ToInt32(val) == 1;
+        }
+        public async Task<byte[]?> GetBookCoverBytesAsync(int bookId, CancellationToken ct = default)
+        {
+            using var conn = CreateConnection();
+            await conn.OpenAsync(ct);
+
+            using var cmd = new SqlCommand(@"
+        SELECT TOP (1) ImageData 
+        FROM dbo.BookImages
+        WHERE BookId = @id
+        ORDER BY CreatedAtUtc DESC;", conn);
+            cmd.Parameters.AddWithValue("@id", bookId);
+
+            var result = await cmd.ExecuteScalarAsync(ct);
+            return result == DBNull.Value || result is null ? null : (byte[])result;
+        }
+
+
+
+
     }
 }

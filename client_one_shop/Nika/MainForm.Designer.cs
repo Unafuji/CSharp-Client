@@ -34,6 +34,7 @@
             labelItemCount = new Label();
             label1 = new Label();
             button1 = new Button();
+            button2 = new Button();
             ((System.ComponentModel.ISupportInitialize)dataGridViewCart).BeginInit();
             SuspendLayout();
             // 
@@ -59,7 +60,7 @@
             // 
             labelTotal.AutoSize = true;
             labelTotal.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
-            labelTotal.Location = new Point(779, 557);
+            labelTotal.Location = new Point(779, 522);
             labelTotal.Margin = new Padding(4, 0, 4, 0);
             labelTotal.Name = "labelTotal";
             labelTotal.Size = new Size(96, 21);
@@ -70,13 +71,12 @@
             // 
             labelItemCount.AutoSize = true;
             labelItemCount.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
-            labelItemCount.Location = new Point(779, 578);
+            labelItemCount.Location = new Point(779, 543);
             labelItemCount.Margin = new Padding(4, 0, 4, 0);
             labelItemCount.Name = "labelItemCount";
             labelItemCount.Size = new Size(69, 21);
             labelItemCount.TabIndex = 3;
             labelItemCount.Text = "Items: 0";
-            //labelItemCount.Click += labelItemCount_Click;
             // 
             // label1
             // 
@@ -98,11 +98,22 @@
             button1.UseVisualStyleBackColor = true;
             button1.Click += button1_Click;
             // 
+            // button2
+            // 
+            button2.Location = new Point(1054, 576);
+            button2.Name = "button2";
+            button2.Size = new Size(75, 23);
+            button2.TabIndex = 5;
+            button2.Text = "Sale";
+            button2.UseVisualStyleBackColor = true;
+            button2.Click += BtnSale;
+            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1159, 611);
+            Controls.Add(button2);
             Controls.Add(button1);
             Controls.Add(label1);
             Controls.Add(labelItemCount);
@@ -112,7 +123,6 @@
             Margin = new Padding(4, 3, 4, 3);
             Name = "MainForm";
             Text = "Bookstore App";
-            //Load += MainForm_Load;
             ((System.ComponentModel.ISupportInitialize)dataGridViewCart).EndInit();
             ResumeLayout(false);
             PerformLayout();
@@ -126,5 +136,6 @@
         private System.Windows.Forms.Label labelItemCount;
         private Label label1;
         private Button button1;
+        private Button button2;
     }
 }

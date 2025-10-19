@@ -31,8 +31,6 @@
             labelHeader = new Label();
             labelISBN13 = new Label();
             textBoxISBN13 = new TextBox();
-            labelTitle = new Label();
-            textBoxTitle = new TextBox();
             labelAuthorId = new Label();
             textBoxAuthorId = new TextBox();
             labelListPrice = new Label();
@@ -48,6 +46,7 @@
             dataGridViewBooks = new DataGridView();
             buttonPOS = new Button();
             groupBox1 = new GroupBox();
+            button5 = new Button();
             button4 = new Button();
             label6 = new Label();
             label5 = new Label();
@@ -94,26 +93,10 @@
             textBoxISBN13.Size = new Size(230, 23);
             textBoxISBN13.TabIndex = 4;
             // 
-            // labelTitle
-            // 
-            labelTitle.AutoSize = true;
-            labelTitle.Location = new Point(17, 85);
-            labelTitle.Name = "labelTitle";
-            labelTitle.Size = new Size(33, 15);
-            labelTitle.TabIndex = 5;
-            labelTitle.Text = "Title:";
-            // 
-            // textBoxTitle
-            // 
-            textBoxTitle.Location = new Point(125, 82);
-            textBoxTitle.Name = "textBoxTitle";
-            textBoxTitle.Size = new Size(230, 23);
-            textBoxTitle.TabIndex = 6;
-            // 
             // labelAuthorId
             // 
             labelAuthorId.AutoSize = true;
-            labelAuthorId.Location = new Point(17, 115);
+            labelAuthorId.Location = new Point(18, 84);
             labelAuthorId.Name = "labelAuthorId";
             labelAuthorId.Size = new Size(47, 15);
             labelAuthorId.TabIndex = 7;
@@ -121,7 +104,7 @@
             // 
             // textBoxAuthorId
             // 
-            textBoxAuthorId.Location = new Point(125, 112);
+            textBoxAuthorId.Location = new Point(125, 81);
             textBoxAuthorId.Name = "textBoxAuthorId";
             textBoxAuthorId.Size = new Size(230, 23);
             textBoxAuthorId.TabIndex = 8;
@@ -129,7 +112,7 @@
             // labelListPrice
             // 
             labelListPrice.AutoSize = true;
-            labelListPrice.Location = new Point(17, 145);
+            labelListPrice.Location = new Point(18, 113);
             labelListPrice.Name = "labelListPrice";
             labelListPrice.Size = new Size(36, 15);
             labelListPrice.TabIndex = 9;
@@ -137,7 +120,7 @@
             // 
             // textBoxListPrice
             // 
-            textBoxListPrice.Location = new Point(125, 142);
+            textBoxListPrice.Location = new Point(125, 110);
             textBoxListPrice.Name = "textBoxListPrice";
             textBoxListPrice.Size = new Size(230, 23);
             textBoxListPrice.TabIndex = 10;
@@ -145,7 +128,7 @@
             // labelCostPrice
             // 
             labelCostPrice.AutoSize = true;
-            labelCostPrice.Location = new Point(17, 175);
+            labelCostPrice.Location = new Point(19, 142);
             labelCostPrice.Name = "labelCostPrice";
             labelCostPrice.Size = new Size(35, 15);
             labelCostPrice.TabIndex = 11;
@@ -153,7 +136,7 @@
             // 
             // textBoxCostPrice
             // 
-            textBoxCostPrice.Location = new Point(125, 172);
+            textBoxCostPrice.Location = new Point(125, 139);
             textBoxCostPrice.Name = "textBoxCostPrice";
             textBoxCostPrice.Size = new Size(230, 23);
             textBoxCostPrice.TabIndex = 12;
@@ -161,7 +144,7 @@
             // labelStock
             // 
             labelStock.AutoSize = true;
-            labelStock.Location = new Point(17, 205);
+            labelStock.Location = new Point(17, 171);
             labelStock.Name = "labelStock";
             labelStock.Size = new Size(83, 15);
             labelStock.TabIndex = 13;
@@ -169,7 +152,7 @@
             // 
             // textBoxStock
             // 
-            textBoxStock.Location = new Point(125, 202);
+            textBoxStock.Location = new Point(125, 168);
             textBoxStock.Name = "textBoxStock";
             textBoxStock.Size = new Size(230, 23);
             textBoxStock.TabIndex = 14;
@@ -217,10 +200,11 @@
             // dataGridViewBooks
             // 
             dataGridViewBooks.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dataGridViewBooks.Location = new Point(379, 47);
+            dataGridViewBooks.Location = new Point(379, 76);
             dataGridViewBooks.Name = "dataGridViewBooks";
-            dataGridViewBooks.Size = new Size(685, 590);
+            dataGridViewBooks.Size = new Size(685, 561);
             dataGridViewBooks.TabIndex = 19;
+            dataGridViewBooks.CellClick += dataGridViewBooks_CellClick;
             dataGridViewBooks.SelectionChanged += dataGridViewBooks_SelectionChanged;
             // 
             // buttonPOS
@@ -251,9 +235,7 @@
             groupBox1.Controls.Add(buttonClear);
             groupBox1.Controls.Add(textBoxISBN13);
             groupBox1.Controls.Add(buttonDelete);
-            groupBox1.Controls.Add(labelTitle);
             groupBox1.Controls.Add(buttonUpdate);
-            groupBox1.Controls.Add(textBoxTitle);
             groupBox1.Controls.Add(buttonCreate);
             groupBox1.Controls.Add(labelAuthorId);
             groupBox1.Controls.Add(textBoxStock);
@@ -269,6 +251,16 @@
             groupBox1.TabIndex = 21;
             groupBox1.TabStop = false;
             groupBox1.Text = "Information";
+            // 
+            // button5
+            // 
+            button5.Location = new Point(989, 47);
+            button5.Name = "button5";
+            button5.Size = new Size(75, 23);
+            button5.TabIndex = 32;
+            button5.Text = "Sales";
+            button5.UseVisualStyleBackColor = true;
+            button5.Click += button5_Click;
             // 
             // button4
             // 
@@ -300,7 +292,7 @@
             // label4
             // 
             label4.AutoSize = true;
-            label4.Location = new Point(17, 234);
+            label4.Location = new Point(17, 200);
             label4.Name = "label4";
             label4.Size = new Size(81, 15);
             label4.TabIndex = 28;
@@ -308,7 +300,7 @@
             // 
             // textBox1
             // 
-            textBox1.Location = new Point(125, 231);
+            textBox1.Location = new Point(125, 197);
             textBox1.Name = "textBox1";
             textBox1.Size = new Size(230, 23);
             textBox1.TabIndex = 27;
@@ -401,6 +393,7 @@
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1077, 655);
+            Controls.Add(button5);
             Controls.Add(groupBox2);
             Controls.Add(groupBox1);
             Controls.Add(buttonPOS);
@@ -423,8 +416,6 @@
         private Label labelHeader;
         private Label labelISBN13;
         private TextBox textBoxISBN13;
-        private Label labelTitle;
-        private TextBox textBoxTitle;
         private Label labelAuthorId;
         private TextBox textBoxAuthorId;
         private Label labelListPrice;
@@ -454,5 +445,6 @@
         private Label label6;
         private Label label5;
         private Button button4;
+        private Button button5;
     }
 }
