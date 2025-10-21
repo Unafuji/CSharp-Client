@@ -1,13 +1,13 @@
 ﻿
 using client_one_shop.Connections;
 using Microsoft.Data.SqlClient;
-using System.Data; 
+using System.Data;
 
 namespace client_one_shop.YongBin.Controllers
 {
     internal class ProductController
     {
- 
+
 
         public bool AddProduct(string productName, string description, decimal price, int quantity)
         {
@@ -158,7 +158,7 @@ namespace client_one_shop.YongBin.Controllers
         // PRODUCT IMAGES CRUD
         // -----------------------------
 
-        public bool AddProductImage(int productId, string imageUrl, string caption)
+        public bool AddProductImage(int productId, byte[] imageData, string caption)
         {
             try
             {
@@ -166,9 +166,10 @@ namespace client_one_shop.YongBin.Controllers
                 using (SqlCommand cmd = new SqlCommand("sp_AddProductImage", conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
+
                     cmd.Parameters.AddWithValue("@ProductID", productId);
-                    cmd.Parameters.AddWithValue("@ImageUrl", imageUrl);
-                    cmd.Parameters.AddWithValue("@Caption", caption);
+                    cmd.Parameters.AddWithValue("@ImageData", imageData ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Caption", caption ?? (object)DBNull.Value);
 
                     conn.Open();
                     cmd.ExecuteNonQuery();
@@ -213,7 +214,7 @@ namespace client_one_shop.YongBin.Controllers
             return dt;
         }
 
-        public bool UpdateProductImage(int imageId, string imageUrl, string caption)
+        public bool UpdateProductImage(int imageId, byte[] imageData, string caption)
         {
             try
             {
@@ -223,12 +224,13 @@ namespace client_one_shop.YongBin.Controllers
                     cmd.CommandType = CommandType.StoredProcedure;
 
                     cmd.Parameters.AddWithValue("@ImageID", imageId);
-                    cmd.Parameters.AddWithValue("@ImageUrl", imageUrl);
-                    cmd.Parameters.AddWithValue("@Caption", caption);
+                    cmd.Parameters.AddWithValue("@ImageData", imageData ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Caption", caption ?? (object)DBNull.Value);
 
                     conn.Open();
                     cmd.ExecuteNonQuery();
                 }
+
                 return true;
             }
             catch (Exception ex)
@@ -237,6 +239,7 @@ namespace client_one_shop.YongBin.Controllers
                 return false;
             }
         }
+
 
         public bool DeleteProductImage(int imageId)
         {
@@ -267,7 +270,7 @@ namespace client_one_shop.YongBin.Controllers
             using (SqlCommand cmd = new SqlCommand("dbo.sp_GetProductsWithImages", conn))
             {
                 cmd.CommandType = CommandType.StoredProcedure;
-                 
+
                 if (productId.HasValue)
                 {
                     cmd.Parameters.AddWithValue("@ProductID", productId.Value);
@@ -285,7 +288,7 @@ namespace client_one_shop.YongBin.Controllers
                     adapter.Fill(dt);
                 }
                 catch (Exception ex)
-                { 
+                {
                     throw new Exception("Error retrieving products with images: " + ex.Message, ex);
                 }
             }

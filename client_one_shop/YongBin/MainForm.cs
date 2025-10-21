@@ -40,18 +40,22 @@ namespace client_one_shop.YongBin
                 txtDescription.Text = row.Cells["Description"].Value?.ToString() ?? "";
                 txtPrice.Text = row.Cells["Price"].Value?.ToString() ?? "";
                 txtQuantity.Text = row.Cells["Quantity"].Value?.ToString() ?? "";
-                 
+
                 selectedProductId = Convert.ToInt32(row.Cells["ProductID"].Value);
-                 
+
+                // Load image from database
                 DataTable imageTable = _productController.GetProductImages(selectedProductId.Value);
 
                 if (imageTable.Rows.Count > 0)
                 {
-                    string imageUrl = imageTable.Rows[0]["ImageUrl"]?.ToString();
-                    if (!string.IsNullOrEmpty(imageUrl) && File.Exists(imageUrl))
+                    byte[] imageData = imageTable.Rows[0]["ImageData"] as byte[];
+                    if (imageData != null && imageData.Length > 0)
                     {
-                        pictureBox1.Image?.Dispose();  
-                        pictureBox1.Image = Image.FromFile(imageUrl);
+                        using (MemoryStream ms = new MemoryStream(imageData))
+                        {
+                            pictureBox1.Image?.Dispose();
+                            pictureBox1.Image = Image.FromStream(ms);
+                        }
                     }
                     else
                     {
@@ -68,8 +72,6 @@ namespace client_one_shop.YongBin
                 MessageBox.Show("Error loading data from row: " + ex.Message);
             }
         }
-
-
 
 
         private void btnBrowseImage_Click(object sender, EventArgs e)
@@ -158,63 +160,80 @@ namespace client_one_shop.YongBin
         private void BtnCreate(object sender, EventArgs e)
         {
             try
-            {
-                // Check image path
-                if (string.IsNullOrEmpty(lblImagePath.Text))
+            { 
+                if (string.IsNullOrWhiteSpace(txtProductName.Text) ||
+                    string.IsNullOrWhiteSpace(txtDescription.Text) ||
+                    string.IsNullOrWhiteSpace(txtPrice.Text) ||
+                    string.IsNullOrWhiteSpace(txtQuantity.Text))
                 {
-                    MessageBox.Show("Please browse and select an image before adding the product.");
+                    MessageBox.Show("Please fill in all product fields.");
                     return;
                 }
 
-                string name = txtProductName.Text;
-                string description = txtDescription.Text;
-                decimal price = decimal.Parse(txtPrice.Text);
-                int quantity = int.Parse(txtQuantity.Text);
+                if (!decimal.TryParse(txtPrice.Text, out decimal price))
+                {
+                    MessageBox.Show("Invalid price.");
+                    return;
+                }
 
+                if (!int.TryParse(txtQuantity.Text, out int quantity))
+                {
+                    MessageBox.Show("Invalid quantity.");
+                    return;
+                }
+
+                if (string.IsNullOrEmpty(lblImagePath.Text) || !File.Exists(lblImagePath.Text))
+                {
+                    MessageBox.Show("Please browse and select a valid image file before adding the product.");
+                    return;
+                }
+
+                string name = txtProductName.Text.Trim();
+                string description = txtDescription.Text.Trim();
+                string imagePath = lblImagePath.Text;
+
+                // 1. Create product
                 bool isSuccess = _productController.AddProduct(name, description, price, quantity);
 
-                if (isSuccess)
-                {
-                    // Get the inserted product's ID (if your AddProduct returns it or you implement a GetLastInsertedProduct method)
-                    // For now, let's fetch the product by name (assuming unique) - better to improve this with output param.
-
-                    var dt = _productController.GetProduct();
-                    int productId = 0;
-                    foreach (DataRow row in dt.Rows)
-                    {
-                        if (row["ProductName"].ToString() == name)
-                        {
-                            productId = Convert.ToInt32(row["ProductID"]);
-                            break;
-                        }
-                    }
-
-                    if (productId != 0)
-                    {
-                        // Save product image record
-                        string imageUrl = lblImagePath.Text; // You can copy the image file to a folder or store relative path instead
-                        string caption = name + " image";
-
-                        bool imageSuccess = _productController.AddProductImage(productId, imageUrl, caption);
-
-                        if (!imageSuccess)
-                            MessageBox.Show("Product added but failed to save the image.");
-                    }
-
-                    MessageBox.Show("Product added successfully.");
-                    LoadProducts();
-                    BtnClearAllTextBox(sender, e);
-                }
-                else
+                if (!isSuccess)
                 {
                     MessageBox.Show("Failed to add product.");
+                    return;
                 }
+                 
+                var dt = _productController.GetProduct();
+                DataRow productRow = dt.AsEnumerable()
+                                       .FirstOrDefault(r => r.Field<string>("ProductName") == name);
+
+                if (productRow == null)
+                {
+                    MessageBox.Show("Product added but could not retrieve ID.");
+                    return;
+                }
+
+                int productId = productRow.Field<int>("ProductID");
+                 
+                byte[] imageData = File.ReadAllBytes(imagePath);
+                string caption = name + " image";
+                 
+                bool imageSuccess = _productController.AddProductImage(productId, imageData, caption);
+
+                if (!imageSuccess)
+                {
+                    MessageBox.Show("Product added but failed to upload image to database.");
+                }
+
+                MessageBox.Show("Product and image added successfully.");
+                LoadProducts();
+                BtnClearAllTextBox(sender, e);
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Error: " + ex.Message);
             }
         }
+
+
 
         private void BtnClearAllTextBox(object sender, EventArgs e)
         {
