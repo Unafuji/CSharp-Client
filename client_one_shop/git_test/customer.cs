@@ -20,10 +20,10 @@ public class Customer
     // Display customer information
     public void DisplayInfo()
     {
-        Console.WriteLine($"Customer ID: {CustomerId}");
-        Console.WriteLine($"Name: {Name}");
-        Console.WriteLine($"Email: {Email}");
-        Console.WriteLine($"Phone: {Phone}");
+        Console.WriteLine($"Customersadsadasdsadsad ID: {CustomerId}");
+        Console.WriteLine($"Naasdasdamesadsadasdasd: {Name}");
+        Console.WriteLine($"Emsdasdsaail: {Email}");
+        Console.WriteLine($"Phdasdasdasdsadsaone: {Phone}");
     }
 
     // Method to validate email format (simple check)
