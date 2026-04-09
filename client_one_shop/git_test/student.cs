@@ -20,10 +20,10 @@ public class Student
     // Method to display student info
     public void DisplayInfo()
     {
-        Console.WriteLine($"ID: {Id}");
-        Console.WriteLine($"Name: {Name}");
-        Console.WriteLine($"Age: {Age}");
-        Console.WriteLine($"Grade: {Grade}");
+        Console.WriteLine($"IDdsadasdsadas: {Id}");
+        Console.WriteLine($"Nameasdasdsadasdasd: {Name}");
+        Console.WriteLine($"Ageasdsadasdasd: {Age}");
+        Console.WriteLine($"Gradeadsadasdsadasdsa: {Grade}");
     }
 
     // Method to check if student passed
